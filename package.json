@@ -1,0 +1,29 @@
+{
+  "name": "teddy-bear-adventure",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A cozy third-person 3D teddy bear adventure built with three.js and anime.js.",
+  "keywords": [
+    "three.js",
+    "anime.js",
+    "webgl",
+    "game",
+    "vite"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "animejs": "3.2.2",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.6"
+  }
+}
