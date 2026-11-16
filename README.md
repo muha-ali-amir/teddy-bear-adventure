@@ -1,5 +1,7 @@
 # Teddy Bear Adventure
 
+**[Play the live demo →](https://teddy-bear-adventure.vercel.app)**
+
 A cozy third-person 3D exploration game built with **three.js** and **anime.js**. Wander sun-dappled hills, splash through ponds, meet bouncy slimes, and gather every golden coin hidden in the meadow.
 
 Everything in the world — the bear, trees, villages, ponds, coins, and slimes — is generated procedurally. There are no external art assets to download.

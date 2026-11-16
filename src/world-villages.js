@@ -72,17 +72,20 @@ function addHouse(parts, glowParts, rng, house, parent) {
     parent,
   );
 
-  // Timber framing.
-  for (const x of [-w / 2 + 0.06, w / 2 - 0.06]) {
-    for (const z of [-d / 2 + 0.06, d / 2 - 0.06]) {
+  // Timber framing. Keep the beams slightly proud of the plaster: when their
+  // outer faces sit flush with the wall the coplanar surfaces z-fight and
+  // flicker as the camera moves.
+  const beamInset = 0.03;
+  for (const x of [-w / 2 + beamInset, w / 2 - beamInset]) {
+    for (const z of [-d / 2 + beamInset, d / 2 - beamInset]) {
       addColoredPart(parts, new THREE.BoxGeometry(0.12, wallH + 0.06, 0.12), WOOD, [x, wallY, z], null, null, parent);
     }
   }
-  for (const z of [-d / 2 + 0.06, d / 2 - 0.06]) {
+  for (const z of [-d / 2 + beamInset, d / 2 - beamInset]) {
     addColoredPart(parts, new THREE.BoxGeometry(w, 0.11, 0.12), WOOD, [0, wallY + wallH * 0.22, z], null, null, parent);
     addColoredPart(parts, new THREE.BoxGeometry(w, 0.15, 0.12), WOOD, [0, roofBaseY - 0.06, z], null, null, parent);
   }
-  for (const x of [-w / 2 + 0.06, w / 2 - 0.06]) {
+  for (const x of [-w / 2 + beamInset, w / 2 - beamInset]) {
     addColoredPart(parts, new THREE.BoxGeometry(0.12, 0.12, d), WOOD, [x, wallY + wallH * 0.22, 0], null, null, parent);
     addColoredPart(parts, new THREE.BoxGeometry(0.12, 0.15, d), WOOD, [x, roofBaseY - 0.06, 0], null, null, parent);
   }
