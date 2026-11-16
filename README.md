@@ -17,7 +17,7 @@ Everything in the world — the bear, trees, villages, ponds, coins, and slimes 
 - Hopping slimes and 24 floating, glowing collectible coins
 - Rotating minimap that follows the camera heading and shows trees, water, coins, villages, and trails
 - Storybook start screen, location banners, coin counter, pause menu, and victory celebration
-- Sound effects with a mute toggle, plus reduced-motion support
+- A cozy procedural bluegrass-inspired soundtrack, plus sound effects, with a mute toggle and reduced-motion support
 - Responsive HUD for desktop and mobile
 
 ![Teddy Bear Adventure gameplay](docs/screenshot-game.jpg)
@@ -70,7 +70,8 @@ teddy-bear-adventure/
 │   ├── world-coins.js     # Collectible coins
 │   ├── world-slimes.js    # Hopping slimes
 │   ├── minimap.js         # Rotating Canvas minimap
-│   ├── audio.js           # Procedural sound effects
+│   ├── audio.js           # Sound effects and music playback
+│   ├── music.js           # Procedural bluegrass soundtrack
 │   ├── particles.js       # Ambient particle effects
 │   ├── nature-geometry.js # Shared tree and plant geometry
 │   ├── geometry-utils.js  # Geometry helpers
@@ -87,6 +88,7 @@ teddy-bear-adventure/
 - Trees, grass, and flowers use instancing and merged geometry to keep draw calls low.
 - The bear is a custom `SkinnedMesh` with hand-built bones. `AnimationMixer` drives the idle/run/jump clips, while anime.js adds ear and tail motion.
 - anime.js also powers the UI transitions, coin animations, and village light twinkles.
+- The soundtrack is synthesized live with Web Audio: Karplus-Strong plucked strings for banjo, guitar, and bass, a gentle fiddle line, and convolution reverb.
 - The camera pulls in around houses, wells, and tree trunks, and smoothly fades the bear when it gets too close.
 
 ## Built with

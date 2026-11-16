@@ -1,9 +1,12 @@
+import { createBluegrassMusic } from './music.js';
+
 export class AudioEngine {
   constructor() {
     this.context = null;
     this.master = null;
     this.sfx = null;
     this.ambient = null;
+    this.music = null;
     this.muted = false;
     this.initialized = false;
     this.birdTimer = null;
@@ -28,51 +31,13 @@ export class AudioEngine {
     this.ambient.gain.value = 0.9;
     this.ambient.connect(this.master);
 
-    this.createWind();
+    this.music = createBluegrassMusic(this.context, this.ambient);
     this.scheduleBird();
     this.initialized = true;
 
     if (this.context.state === 'suspended') {
       this.context.resume();
     }
-  }
-
-  createWind() {
-    const duration = 4;
-    const sampleRate = this.context.sampleRate;
-    const buffer = this.context.createBuffer(1, sampleRate * duration, sampleRate);
-    const data = buffer.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < data.length; i += 1) {
-      const white = Math.random() * 2 - 1;
-      last = last * 0.985 + white * 0.015;
-      data[i] = last * 2.8;
-    }
-
-    const source = this.context.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-
-    const filter = this.context.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 720;
-    filter.Q.value = 0.35;
-
-    const gain = this.context.createGain();
-    gain.gain.value = 0.035;
-
-    const lfo = this.context.createOscillator();
-    const lfoGain = this.context.createGain();
-    lfo.frequency.value = 0.08;
-    lfoGain.gain.value = 0.012;
-    lfo.connect(lfoGain);
-    lfoGain.connect(gain.gain);
-    lfo.start();
-
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.ambient);
-    source.start();
   }
 
   scheduleBird() {
@@ -99,7 +64,7 @@ export class AudioEngine {
       oscillator.frequency.setValueAtTime(base, start);
       oscillator.frequency.exponentialRampToValueAtTime(base * (1.12 + Math.random() * 0.25), start + 0.08);
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.012, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.02, start + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.12);
       oscillator.connect(gain);
       gain.connect(this.ambient);

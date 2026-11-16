@@ -1123,6 +1123,7 @@ function exposeDebugApi() {
     camera,
     world,
     bear,
+    audio,
     errors: errorLog,
     get phase() {
       return appPhase;
