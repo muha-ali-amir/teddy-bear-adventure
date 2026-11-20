@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#263c27" />
     <meta
       name="description"
@@ -80,6 +83,12 @@
           <span><kbd>M</kbd><em>Sound</em></span>
         </div>
 
+        <button id="pause-button" class="pause-button" type="button" aria-label="Pause game" title="Pause">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+        </button>
+
         <button id="audio-button" class="audio-button reveal" type="button" aria-label="Mute sound" title="Mute sound (M)">
           <svg class="sound-on-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 9v6h4l5 4V5L8 9H4z" />
@@ -90,6 +99,26 @@
             <path d="m16 9 5 6m0-6-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
         </button>
+
+        <div id="touch-controls" class="touch-controls">
+          <div id="touch-stick" class="touch-stick" aria-hidden="true">
+            <div class="touch-stick-ring"></div>
+            <div id="touch-stick-knob" class="touch-stick-knob">
+              <svg viewBox="0 0 100 100">
+                <ellipse cx="30" cy="34" rx="10" ry="14" transform="rotate(-20 30 34)" />
+                <ellipse cx="50" cy="26" rx="10" ry="14" />
+                <ellipse cx="70" cy="34" rx="10" ry="14" transform="rotate(20 70 34)" />
+                <path d="M50 44c-15 0-25 10-25 23 0 10 8 16 18 16h14c10 0 18-6 18-16 0-13-10-23-25-23z" />
+              </svg>
+            </div>
+          </div>
+          <button id="touch-jump" class="touch-jump" type="button" aria-label="Jump">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 19V6M6 12l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Jump</span>
+          </button>
+        </div>
       </div>
 
       <div id="coin-float-layer" class="coin-float-layer"></div>
@@ -161,11 +190,15 @@
 
           <div class="start-meta">
             <div class="start-controls">
-              <span class="control-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><em>move</em></span>
-              <span class="control-hint"><kbd>SPACE</kbd><em>jump</em></span>
-              <span class="control-hint"><span class="mouse-glyph"></span><em>look around</em></span>
+              <span class="control-hint desktop-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><em>move</em></span>
+              <span class="control-hint desktop-only"><kbd>SPACE</kbd><em>jump</em></span>
+              <span class="control-hint desktop-only"><span class="mouse-glyph"></span><em>look around</em></span>
+              <span class="control-hint touch-only"><kbd>STICK</kbd><em>move</em></span>
+              <span class="control-hint touch-only"><span class="mouse-glyph"></span><em>drag to look</em></span>
+              <span class="control-hint touch-only"><kbd>JUMP</kbd><em>hop</em></span>
             </div>
-            <p>Click to capture your mouse. Press <kbd>ESC</kbd> for a breather.</p>
+            <p class="desktop-only">Click to capture your mouse. Press <kbd>ESC</kbd> for a breather.</p>
+            <p class="touch-only">Left thumb walks, right thumb looks around, and the jump button hops.</p>
           </div>
         </div>
 
@@ -222,7 +255,8 @@
               <span class="audio-label">Sound on</span>
             </button>
           </div>
-          <p class="pause-hint">Your mouse is free. Click continue to capture it again.</p>
+          <p class="pause-hint desktop-only">Your mouse is free. Click continue to capture it again.</p>
+          <p class="pause-hint touch-only">Tap continue whenever you're ready to wander again.</p>
         </div>
       </section>
 

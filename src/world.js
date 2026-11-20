@@ -59,7 +59,7 @@ const skyFragmentShader = /* glsl */ `
   }
 `;
 
-function createSky(scene) {
+function createSky(scene, lowPower = false) {
   const skyMaterial = new THREE.ShaderMaterial({
     uniforms: {
       uHorizonColor: { value: new THREE.Color('#e5edd4') },
@@ -73,7 +73,14 @@ function createSky(scene) {
     depthWrite: false,
     fog: false,
   });
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(SKY_RADIUS, 32, 18), skyMaterial);
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(
+      SKY_RADIUS,
+      lowPower ? 20 : 32,
+      lowPower ? 12 : 18,
+    ),
+    skyMaterial,
+  );
   sky.name = 'Sky';
   sky.frustumCulled = false;
   sky.renderOrder = -100;
@@ -81,14 +88,15 @@ function createSky(scene) {
   return sky;
 }
 
-function createLights(scene, worldGroup) {
+function createLights(scene, worldGroup, lowPower = false) {
   const hemisphere = new THREE.HemisphereLight('#c6e9ff', '#5b7140', 1.3);
   scene.add(hemisphere);
 
   const sun = new THREE.DirectionalLight('#fff1c6', 2.55);
   sun.position.set(40, 52, 26);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  const shadowSize = lowPower ? 1024 : 2048;
+  sun.shadow.mapSize.set(shadowSize, shadowSize);
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 130;
   sun.shadow.camera.left = -34;
@@ -112,12 +120,12 @@ function createLights(scene, worldGroup) {
   return { hemisphere, sun, rimLight };
 }
 
-function createTerrain(worldGroup) {
+function createTerrain(worldGroup, segments = TERRAIN_SEGMENTS) {
   const geometry = new THREE.PlaneGeometry(
     TERRAIN_SIZE,
     TERRAIN_SIZE,
-    TERRAIN_SEGMENTS,
-    TERRAIN_SEGMENTS,
+    segments,
+    segments,
   );
   geometry.rotateX(-Math.PI / 2);
   const positions = geometry.attributes.position;
@@ -314,7 +322,7 @@ function createTrailMarkers(worldGroup) {
   return group;
 }
 
-export function createWorld(scene) {
+export function createWorld(scene, { lowPower = false } = {}) {
   const worldGroup = new THREE.Group();
   worldGroup.name = 'TeddyBearWorld';
   scene.add(worldGroup);
@@ -322,9 +330,12 @@ export function createWorld(scene) {
   scene.fog = new THREE.Fog('#d3e2c3', 65, 235);
   scene.background = new THREE.Color('#d3e2c3');
 
-  createSky(scene);
-  const lights = createLights(scene, worldGroup);
-  const terrain = createTerrain(worldGroup);
+  createSky(scene, lowPower);
+  const lights = createLights(scene, worldGroup, lowPower);
+  const terrain = createTerrain(
+    worldGroup,
+    lowPower ? 260 : TERRAIN_SEGMENTS,
+  );
   createDistantHills(worldGroup);
   const clouds = createClouds(worldGroup);
   createTrailMarkers(worldGroup);
@@ -334,11 +345,11 @@ export function createWorld(scene) {
   const ponds = buildPonds(worldGroup);
 
   const sparklePool = new ParticlePool(worldGroup, {
-    maxParticles: 720,
+    maxParticles: lowPower ? 360 : 720,
     blending: THREE.AdditiveBlending,
   });
   const dustPool = new ParticlePool(worldGroup, {
-    maxParticles: 520,
+    maxParticles: lowPower ? 260 : 520,
     blending: THREE.NormalBlending,
   });
   const coins = buildCoins(worldGroup, colliders, sparklePool);
@@ -346,9 +357,12 @@ export function createWorld(scene) {
     colliders,
     coins: coins.coins,
     rng: mulberry32(39203),
+    lowPower,
   });
   const slimes = buildSlimes(worldGroup, colliders, dustPool);
-  const pollen = createPollen(worldGroup);
+  const pollen = createPollen(worldGroup, {
+    count: lowPower ? 130 : 240,
+  });
 
   function updateLights(playerPosition) {
     const sun = lights.sun;

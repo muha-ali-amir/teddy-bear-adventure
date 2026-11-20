@@ -156,8 +156,7 @@ export class ParticlePool {
   }
 }
 
-export function createPollen(parent) {
-  const count = 240;
+export function createPollen(parent, { count = 240 } = {}) {
   const positions = new Float32Array(count * 3);
   const phases = new Float32Array(count);
   for (let i = 0; i < count; i += 1) {

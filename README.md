@@ -18,11 +18,16 @@ Everything in the world — the bear, trees, villages, ponds, coins, and slimes 
 - Rotating minimap that follows the camera heading and shows trees, water, coins, villages, and trails
 - Storybook start screen, location banners, coin counter, pause menu, and victory celebration
 - A cozy procedural bluegrass-inspired soundtrack, plus sound effects, with a mute toggle and reduced-motion support
-- Responsive HUD for desktop and mobile
+- Responsive HUD with a virtual joystick, on-screen jump button, and touch-friendly pause and mute controls
+- Adaptive mobile rendering: capped pixel ratio, lighter shadows, and a lighter meadow on phones and tablets
 
 ![Teddy Bear Adventure gameplay](docs/screenshot-game.jpg)
 
+![Teddy Bear Adventure on a phone, with the virtual joystick, jump button, and minimap](docs/screenshot-mobile.jpg)
+
 ## Controls
+
+### Desktop
 
 | Input | Action |
 | --- | --- |
@@ -33,6 +38,16 @@ Everything in the world — the bear, trees, villages, ponds, coins, and slimes 
 | Mouse wheel | Zoom the camera |
 | `Esc` | Pause / release the pointer |
 | `M` | Mute or unmute |
+
+### Touch
+
+| Input | Action |
+| --- | --- |
+| Left joystick | Move (push to the rim to run) |
+| Drag the scene | Look around |
+| Jump button | Jump |
+| Pause button | Pause / resume |
+| Speaker button | Mute or unmute |
 
 ## Getting started
 
@@ -89,6 +104,9 @@ teddy-bear-adventure/
 - The bear is a custom `SkinnedMesh` with hand-built bones. `AnimationMixer` drives the idle/run/jump clips, while anime.js adds ear and tail motion.
 - anime.js also powers the UI transitions, coin animations, and village light twinkles.
 - The soundtrack is synthesized live with Web Audio: Karplus-Strong plucked strings for banjo, guitar, and bass, a gentle fiddle line, and convolution reverb.
+- On phones and tablets, a coarse-pointer check swaps in the joystick, touch look, and jump/pause buttons, and skips pointer lock entirely.
+- Mobile rendering caps the pixel ratio at 1.5, uses a 1024² shadow map, and trims terrain and meadow density to keep frame times comfortable.
+- The world stops rendering while paused, which saves battery on mobile.
 - The camera pulls in around houses, wells, and tree trunks, and smoothly fades the bear when it gets too close.
 
 ## Built with

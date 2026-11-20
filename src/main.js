@@ -28,6 +28,17 @@ const MIN_CAMERA_DISTANCE = 5.4;
 const MAX_CAMERA_DISTANCE = 13.5;
 const COMPASS_POINTS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
+// Touch devices get a joystick, an on-screen jump button and a lower-cost
+// renderer configuration. The game stays identical on mouse-and-keyboard.
+const coarsePointer =
+  window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+const MAX_PIXEL_RATIO = coarsePointer ? 1.5 : 2;
+const LOOK_SENSITIVITY = coarsePointer ? 0.003 : MOUSE_SENSITIVITY;
+const CAMERA_FOV = coarsePointer ? 58 : 52;
+const DEFAULT_CAMERA_DISTANCE = coarsePointer ? 8.4 : 9.2;
+const STICK_RADIUS = 42;
+const STICK_DEADZONE = 0.14;
+
 const dom = {
   canvas: document.getElementById('scene'),
   loadingScreen: document.getElementById('loading-screen'),
@@ -44,6 +55,7 @@ const dom = {
   mapHeading: document.getElementById('map-heading'),
   hintBar: document.getElementById('hint-bar'),
   audioButton: document.getElementById('audio-button'),
+  pauseButton: document.getElementById('pause-button'),
   pauseAudioButton: document.getElementById('pause-audio-button'),
   pauseAudioLabel: document.querySelector('#pause-audio-button .audio-label'),
   coinFloatLayer: document.getElementById('coin-float-layer'),
@@ -52,6 +64,9 @@ const dom = {
   resumeButton: document.getElementById('resume-button'),
   errorScreen: document.getElementById('error-screen'),
   errorMessage: document.getElementById('error-message'),
+  touchStick: document.getElementById('touch-stick'),
+  touchKnob: document.getElementById('touch-stick-knob'),
+  touchJump: document.getElementById('touch-jump'),
 };
 const audioButtons = [
   dom.audioButton,
@@ -80,9 +95,14 @@ let dragging = false;
 let dragMoved = false;
 let dragX = 0;
 let dragY = 0;
+let dragPointerId = null;
+let stickPointerId = null;
+let stickOriginX = 0;
+let stickOriginY = 0;
+const touchMove = { x: 0, y: 0, active: false };
 let yaw = 0.18;
 let pitch = 0.26;
-let cameraDistance = 9.2;
+let cameraDistance = DEFAULT_CAMERA_DISTANCE;
 let cameraClearance = 1;
 let cameraShake = 0;
 let pauseOpenedAt = 0;
@@ -144,7 +164,7 @@ function boot() {
   try {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(
-      52,
+      CAMERA_FOV,
       window.innerWidth / window.innerHeight,
       0.1,
       480,
@@ -152,16 +172,20 @@ function boot() {
 
     renderer = new THREE.WebGLRenderer({
       canvas: dom.canvas,
-      antialias: true,
+      antialias: !coarsePointer,
       powerPreference: 'high-performance',
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO),
+    );
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.06;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = coarsePointer
+      ? THREE.PCFShadowMap
+      : THREE.PCFSoftShadowMap;
 
     bear = createBear();
     player.position.set(SPAWN.x, heightAt(SPAWN.x, SPAWN.z), SPAWN.z);
@@ -169,7 +193,7 @@ function boot() {
     bear.root.rotation.y = player.heading;
     scene.add(bear.root);
 
-    world = createWorld(scene);
+    world = createWorld(scene, { lowPower: coarsePointer });
     minimap = new Minimap(dom.minimap, world, world.data.paths);
     audio = new AudioEngine();
 
@@ -254,7 +278,7 @@ function revealStartScreen() {
 }
 
 function startGame(options = {}) {
-  const { lockPointer = true } = options;
+  const { lockPointer = !coarsePointer } = options;
   if (!world || started) return;
   started = true;
   appPhase = 'playing';
@@ -597,12 +621,32 @@ function getWaterSurfaceY(x, z) {
 }
 
 function updatePlayer(dt) {
-  const forward =
+  let forward =
     (pressed('KeyW', 'ArrowUp') ? 1 : 0) -
     (pressed('KeyS', 'ArrowDown') ? 1 : 0);
-  const strafe =
+  let strafe =
     (pressed('KeyD', 'ArrowRight') ? 1 : 0) -
     (pressed('KeyA', 'ArrowLeft') ? 1 : 0);
+  let inputScale = 1;
+  let touchRunBoost = 1;
+
+  // The virtual stick is analog: a gentle push walks slowly, and its direction
+  // is relative to the camera just like WASD. Pushing it all the way to the
+  // rim eases into a run so crossing the meadow stays comfortable on a phone.
+  if (touchMove.active) {
+    const magnitude = Math.min(1, Math.hypot(touchMove.x, touchMove.y));
+    if (magnitude > 0.001) {
+      forward = -touchMove.y / magnitude;
+      strafe = touchMove.x / magnitude;
+      inputScale = magnitude;
+      touchRunBoost =
+        1 + 0.58 * clamp((magnitude - 0.72) / 0.28, 0, 1);
+    } else {
+      forward = 0;
+      strafe = 0;
+    }
+  }
+
   const sprinting = pressed('ShiftLeft', 'ShiftRight');
   const wasInWater = playerInfo.inWater;
 
@@ -619,7 +663,10 @@ function updatePlayer(dt) {
 
   const startInWater = waterDepthAt(player.position.x, player.position.z) > 0.05;
   const targetSpeed =
-    (sprinting ? SPRINT_SPEED : WALK_SPEED) * (startInWater ? WATER_SPEED : 1);
+    (sprinting ? SPRINT_SPEED : WALK_SPEED) *
+    inputScale *
+    touchRunBoost *
+    (startInWater ? WATER_SPEED : 1);
   const response = player.grounded
     ? moving
       ? GROUND_RESPONSE
@@ -878,6 +925,8 @@ function openPause() {
   pauseOpenedAt = performance.now();
   keys.clear();
   dragging = false;
+  dragPointerId = null;
+  resetTouchInput();
   dom.pauseScreen.classList.add('is-open');
   dom.pauseScreen.setAttribute('aria-hidden', 'false');
   if (bear) bear.pauseDetails(true);
@@ -886,7 +935,7 @@ function openPause() {
   }
 }
 
-function closePause(lockPointer = true) {
+function closePause(lockPointer = !coarsePointer) {
   if (appPhase !== 'paused') return;
   appPhase = 'playing';
   dom.pauseScreen.classList.remove('is-open');
@@ -948,9 +997,9 @@ function onPointerMove(event) {
   if (appPhase !== 'playing') return;
 
   if (document.pointerLockElement === dom.canvas) {
-    yaw -= (event.movementX || 0) * MOUSE_SENSITIVITY;
+    yaw -= (event.movementX || 0) * LOOK_SENSITIVITY;
     pitch = clamp(
-      pitch + (event.movementY || 0) * MOUSE_SENSITIVITY * 0.9,
+      pitch + (event.movementY || 0) * LOOK_SENSITIVITY * 0.9,
       -0.22,
       1.05,
     );
@@ -958,28 +1007,32 @@ function onPointerMove(event) {
   }
 
   if (!dragging) return;
+  if (dragPointerId !== null && event.pointerId !== dragPointerId) return;
   const dx = event.clientX - dragX;
   const dy = event.clientY - dragY;
   dragX = event.clientX;
   dragY = event.clientY;
   if (Math.abs(dx) + Math.abs(dy) > 2.5) dragMoved = true;
 
-  yaw -= dx * MOUSE_SENSITIVITY;
+  yaw -= dx * LOOK_SENSITIVITY;
   pitch = clamp(
-    pitch + dy * MOUSE_SENSITIVITY * 0.9,
+    pitch + dy * LOOK_SENSITIVITY * 0.9,
     -0.22,
     1.05,
   );
 }
 
-function onPointerUp() {
+function onPointerUp(event) {
+  if (dragPointerId !== null && event.pointerId !== dragPointerId) return;
   dragging = false;
+  dragPointerId = null;
 }
 
 function onCanvasPointerDown(event) {
-  if (appPhase !== 'playing') return;
+  if (appPhase !== 'playing' || dragging) return;
   dragging = true;
   dragMoved = false;
+  dragPointerId = event.pointerId;
   dragX = event.clientX;
   dragY = event.clientY;
 
@@ -992,7 +1045,7 @@ function onCanvasPointerDown(event) {
 }
 
 function onCanvasClick() {
-  if (appPhase !== 'playing') return;
+  if (appPhase !== 'playing' || coarsePointer) return;
   if (dragMoved) {
     dragMoved = false;
     return;
@@ -1016,12 +1069,15 @@ function onPointerLockChange() {
     return;
   }
   dragging = false;
+  dragPointerId = null;
   if (hasEverLocked && appPhase === 'playing') openPause();
 }
 
 function onWindowBlur() {
   keys.clear();
   dragging = false;
+  dragPointerId = null;
+  resetTouchInput();
   if (appPhase === 'playing') openPause();
 }
 
@@ -1033,9 +1089,118 @@ function onResize() {
   if (!renderer || !camera) return;
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO),
+  );
   renderer.setSize(window.innerWidth, window.innerHeight);
   minimap?.resize();
+  if (appPhase === 'paused') renderer.render(scene, camera);
+}
+
+function resetTouchInput() {
+  touchMove.x = 0;
+  touchMove.y = 0;
+  touchMove.active = false;
+  stickPointerId = null;
+  if (dom.touchStick) dom.touchStick.classList.remove('is-active');
+  if (dom.touchKnob) dom.touchKnob.style.transform = '';
+  if (dom.touchJump) dom.touchJump.classList.remove('is-pressed');
+}
+
+function updateStickFromEvent(event) {
+  let dx = event.clientX - stickOriginX;
+  let dy = event.clientY - stickOriginY;
+  const distance = Math.hypot(dx, dy);
+  if (distance > STICK_RADIUS) {
+    dx = (dx / distance) * STICK_RADIUS;
+    dy = (dy / distance) * STICK_RADIUS;
+  }
+
+  if (dom.touchKnob) {
+    dom.touchKnob.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+  }
+
+  const nx = dx / STICK_RADIUS;
+  const ny = dy / STICK_RADIUS;
+  const magnitude = Math.hypot(nx, ny);
+  touchMove.active = true;
+
+  if (magnitude < STICK_DEADZONE) {
+    touchMove.x = 0;
+    touchMove.y = 0;
+    return;
+  }
+
+  const scaled = Math.min(
+    1,
+    (magnitude - STICK_DEADZONE) / (1 - STICK_DEADZONE),
+  );
+  touchMove.x = (nx / magnitude) * scaled;
+  touchMove.y = (ny / magnitude) * scaled;
+}
+
+function onStickPointerDown(event) {
+  if (appPhase !== 'playing' || stickPointerId !== null) return;
+  event.preventDefault();
+  event.stopPropagation();
+  stickPointerId = event.pointerId;
+
+  const rect = dom.touchStick.getBoundingClientRect();
+  stickOriginX = rect.left + rect.width / 2;
+  stickOriginY = rect.top + rect.height / 2;
+  dom.touchStick.classList.add('is-active');
+  try {
+    dom.touchStick.setPointerCapture(event.pointerId);
+  } catch (error) {
+    // Pointer capture is a nicety; the stick still tracks pointermove events.
+  }
+  updateStickFromEvent(event);
+}
+
+function onStickPointerMove(event) {
+  if (event.pointerId !== stickPointerId) return;
+  event.preventDefault();
+  event.stopPropagation();
+  updateStickFromEvent(event);
+}
+
+function onStickPointerUp(event) {
+  if (event.pointerId !== stickPointerId) return;
+  resetTouchInput();
+}
+
+function onJumpPointerDown(event) {
+  if (appPhase !== 'playing') return;
+  event.preventDefault();
+  event.stopPropagation();
+  jumpBuffer = 0.16;
+  dom.touchJump.classList.add('is-pressed');
+}
+
+function onJumpPointerUp(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  dom.touchJump.classList.remove('is-pressed');
+}
+
+function setupTouchControls() {
+  if (!coarsePointer || !dom.touchStick || !dom.touchJump) return;
+
+  dom.touchStick.addEventListener('pointerdown', onStickPointerDown);
+  dom.touchStick.addEventListener('pointermove', onStickPointerMove);
+  dom.touchStick.addEventListener('pointerup', onStickPointerUp);
+  dom.touchStick.addEventListener('pointercancel', onStickPointerUp);
+  dom.touchStick.addEventListener('lostpointercapture', onStickPointerUp);
+
+  dom.touchJump.addEventListener('pointerdown', onJumpPointerDown);
+  dom.touchJump.addEventListener('pointerup', onJumpPointerUp);
+  dom.touchJump.addEventListener('pointercancel', onJumpPointerUp);
+  dom.touchJump.addEventListener('pointerleave', onJumpPointerUp);
+  dom.touchJump.addEventListener('contextmenu', (event) =>
+    event.preventDefault(),
+  );
 }
 
 function setupEvents() {
@@ -1055,8 +1220,11 @@ function setupEvents() {
   });
   window.addEventListener('wheel', onWheel, { passive: true });
 
+  setupTouchControls();
+
   dom.playButton.addEventListener('click', () => startGame());
-  dom.resumeButton.addEventListener('click', () => closePause(true));
+  dom.resumeButton.addEventListener('click', () => closePause());
+  dom.pauseButton?.addEventListener('click', openPause);
   dom.audioButton.addEventListener('click', toggleMute);
   dom.pauseAudioButton.addEventListener('click', toggleMute);
   dom.startAudioButton.addEventListener('click', () => {
@@ -1096,7 +1264,9 @@ function frame(now) {
   }
 
   updateCompass();
-  renderer.render(scene, camera);
+  // The pause screen is a DOM overlay above the last rendered frame, so the
+  // world can stay still and save battery while the game is paused.
+  if (appPhase !== 'paused') renderer.render(scene, camera);
 }
 
 function showFatalError(error) {
@@ -1135,6 +1305,18 @@ function exposeDebugApi() {
         collected: collectedCoins,
         total: totalCoins,
         pointerLocked,
+        touch: coarsePointer,
+        touchInput: {
+          x: touchMove.x,
+          y: touchMove.y,
+          active: touchMove.active,
+        },
+        quality: {
+          pixelRatio: renderer.getPixelRatio(),
+          maxPixelRatio: MAX_PIXEL_RATIO,
+          fov: camera.fov,
+          shadowMapSize: world?.lights?.sun?.shadow?.mapSize?.x ?? null,
+        },
         player: { ...playerInfo },
         camera: {
           yaw,

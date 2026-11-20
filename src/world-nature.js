@@ -80,7 +80,12 @@ function makePaleTint(random, strength = 0.14) {
   return `rgb(${Math.round(tint * 255)}, ${Math.round((tint + random() * 0.04) * 255)}, ${Math.round((tint - random() * 0.03) * 255)})`;
 }
 
-export function createNature(worldGroup, { colliders, coins, rng = mulberry32(52310) }) {
+export function createNature(worldGroup, { colliders, coins, rng = mulberry32(52310), lowPower = false }) {
+  const bushTarget = lowPower ? 130 : 185;
+  const rockTarget = lowPower ? 26 : 34;
+  const flowerTarget = lowPower ? 220 : 520;
+  const mushroomTarget = lowPower ? 45 : 70;
+
   const trees = [];
   const treeClusters = [
     [-83, -60, 14],
@@ -211,7 +216,7 @@ export function createNature(worldGroup, { colliders, coins, rng = mulberry32(52
   };
   const bushPositions = [];
   let bushAttempts = 0;
-  while (bushPositions.length < 185 && bushAttempts < 2000) {
+  while (bushPositions.length < bushTarget && bushAttempts < 2000) {
     bushAttempts += 1;
     const angle = rng() * Math.PI * 2;
     const radius = Math.sqrt(rng()) * 112;
@@ -254,7 +259,7 @@ export function createNature(worldGroup, { colliders, coins, rng = mulberry32(52
   // Rocks.
   const rockEntries = [];
   let rockAttempts = 0;
-  while (rockEntries.length < 34 && rockAttempts < 500) {
+  while (rockEntries.length < rockTarget && rockAttempts < 500) {
     rockAttempts += 1;
     let x;
     let z;
@@ -343,7 +348,10 @@ export function createNature(worldGroup, { colliders, coins, rng = mulberry32(52
   // Wildflowers.
   const flowerVariants = { daisy: [], pink: [] };
   let flowerAttempts = 0;
-  while (flowerVariants.daisy.length + flowerVariants.pink.length < 520 && flowerAttempts < 2600) {
+  while (
+    flowerVariants.daisy.length + flowerVariants.pink.length < flowerTarget &&
+    flowerAttempts < (lowPower ? 1800 : 2600)
+  ) {
     flowerAttempts += 1;
     let x;
     let z;
@@ -394,7 +402,10 @@ export function createNature(worldGroup, { colliders, coins, rng = mulberry32(52
   // Mushrooms tucked around the trees.
   const mushroomEntries = [];
   let mushroomAttempts = 0;
-  while (mushroomEntries.length < 70 && mushroomAttempts < 420) {
+  while (
+    mushroomEntries.length < mushroomTarget &&
+    mushroomAttempts < (lowPower ? 300 : 420)
+  ) {
     mushroomAttempts += 1;
     const tree = choose(rng, trees);
     if (!tree) break;

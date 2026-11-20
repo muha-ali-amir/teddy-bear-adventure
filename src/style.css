@@ -52,6 +52,17 @@ button:focus-visible {
   outline-offset: 4px;
 }
 
+/* Touch-only copy stays out of the way on mouse-and-keyboard devices. */
+span.touch-only,
+p.touch-only {
+  display: none;
+}
+
+#game {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
 svg {
   display: block;
 }
@@ -987,6 +998,144 @@ kbd {
   fill: currentColor;
 }
 
+.pause-button {
+  position: absolute;
+  right: calc(clamp(18px, 3vw, 32px) + 54px);
+  bottom: clamp(18px, 2.5vw, 28px);
+  width: 44px;
+  height: 44px;
+  display: none;
+  place-items: center;
+  pointer-events: auto;
+  border: 1px solid rgba(255, 248, 226, 0.16);
+  border-radius: 50%;
+  color: #f1e2bd;
+  background: rgba(20, 35, 23, 0.62);
+  box-shadow: 0 10px 28px rgba(6, 14, 8, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.pause-button:hover {
+  transform: scale(1.06);
+  background: rgba(40, 61, 42, 0.8);
+}
+
+.pause-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+}
+
+/* --------------------------- Touch game controls -------------------------- */
+
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 26;
+  display: none;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.touch-stick {
+  position: absolute;
+  left: max(20px, env(safe-area-inset-left));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: 124px;
+  height: 124px;
+  border: 1px solid rgba(255, 248, 226, 0.2);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 248, 226, 0.16), rgba(20, 35, 23, 0.5) 72%);
+  box-shadow:
+    0 16px 36px rgba(6, 14, 8, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0.88;
+  pointer-events: auto;
+  touch-action: none;
+  transition: opacity 0.2s ease;
+}
+
+.touch-stick.is-active {
+  opacity: 1;
+}
+
+.touch-stick-ring {
+  position: absolute;
+  inset: 15px;
+  border: 1px dashed rgba(255, 248, 226, 0.18);
+  border-radius: 50%;
+}
+
+.touch-stick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fdf3d9, #d8c39a 72%, #b8a077);
+  box-shadow:
+    0 8px 18px rgba(6, 14, 8, 0.32),
+    inset 0 1px 0 #fffaf0;
+  will-change: transform;
+}
+
+.touch-stick-knob svg {
+  width: 30px;
+  fill: #3a5234;
+  opacity: 0.82;
+}
+
+.touch-jump {
+  position: absolute;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 76px);
+  width: 86px;
+  height: 86px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid rgba(255, 248, 226, 0.24);
+  border-radius: 50%;
+  color: #fff5dd;
+  background: radial-gradient(circle at 38% 30%, rgba(120, 150, 92, 0.85), rgba(33, 55, 36, 0.88) 72%);
+  box-shadow:
+    0 14px 30px rgba(6, 14, 8, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  pointer-events: auto;
+  touch-action: none;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.touch-jump svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+}
+
+.touch-jump span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.touch-jump.is-pressed {
+  transform: scale(0.92);
+  background: radial-gradient(circle at 38% 30%, rgba(150, 180, 112, 0.95), rgba(43, 70, 46, 0.92) 72%);
+}
+
 .coin-float-layer {
   position: absolute;
   inset: 0;
@@ -1424,8 +1573,8 @@ kbd {
   .start-content {
     width: calc(100vw - 44px);
     margin-left: 22px;
-    padding-top: 70px;
-    padding-bottom: 50px;
+    padding-top: calc(70px + env(safe-area-inset-top));
+    padding-bottom: calc(50px + env(safe-area-inset-bottom));
   }
 
   .title-main {
@@ -1582,6 +1731,56 @@ kbd {
 
   .play-button {
     margin-top: 26px;
+  }
+}
+
+@media (pointer: coarse) {
+  span.touch-only {
+    display: inline-flex;
+  }
+
+  p.touch-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .touch-controls {
+    display: block;
+  }
+
+  .pause-button {
+    display: grid;
+  }
+
+  .hint-bar {
+    display: none;
+  }
+
+  .hud-top-left {
+    top: max(14px, env(safe-area-inset-top));
+    left: max(14px, env(safe-area-inset-left));
+  }
+
+  .map-cluster {
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+  }
+
+  .audio-button {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .pause-button {
+    right: calc(max(14px, env(safe-area-inset-right)) + 50px);
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .start-topbar {
+    top: max(18px, env(safe-area-inset-top));
   }
 }
 
