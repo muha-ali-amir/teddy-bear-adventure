@@ -23,7 +23,13 @@ Everything in the world — the bear, trees, villages, ponds, coins, and slimes 
 
 ![Teddy Bear Adventure gameplay](docs/screenshot-game.jpg)
 
-![Teddy Bear Adventure on a phone, with the virtual joystick, jump button, and minimap](docs/screenshot-mobile.jpg)
+<p align="center">
+  <img
+    src="docs/screenshot-mobile.jpg"
+    alt="Teddy Bear Adventure on a phone, with the virtual joystick, jump button, and minimap"
+    width="300"
+  />
+</p>
 
 ## Controls
 
